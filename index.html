@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Concrete Maturity Meter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark" data-icon="logo" data-size="20"></div>
+    <div class="brand-text">
+      <h1>Concrete Maturity Meter</h1>
+      <p>Intelligent Concrete Monitoring</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="pill pill--offline" id="connPill" role="status" aria-live="polite">
+      <span class="dot"></span><span id="connText">Sensor · Offline</span>
+    </div>
+    <div class="clock" id="clock" aria-label="Current date and time"></div>
+    <button class="avatar" type="button" aria-label="User profile" data-icon="user" data-size="18"></button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Sections">
+    <div class="nav">
+      <a href="#overview" class="nav-link active" data-target="overview"><span data-icon="layout"></span><span>Overview</span></a>
+      <a href="#live" class="nav-link" data-target="live"><span data-icon="activity"></span><span>Live Monitoring</span></a>
+      <a href="#history" class="nav-link" data-target="history"><span data-icon="history"></span><span>Temperature History</span></a>
+      <a href="#settings" class="nav-link" data-target="settings"><span data-icon="sliders"></span><span>Settings</span></a>
+    </div>
+    <div class="sidebar-foot">
+      <div class="foot-row"><span>Method</span><strong>Nurse-Saul</strong></div>
+      <div class="foot-row"><span>Datum T₀</span><strong id="sbDatum">−10 °C</strong></div>
+      <div class="foot-row"><span>Source</span><strong id="sbSource">Simulated</strong></div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+
+      <div class="notice" id="notice">
+        <span data-icon="info" data-size="16"></span>
+        <span><strong>Simulated data.</strong> Readings are produced by a software model, not a sensor. Switch the data source in Settings to use an ESP32.</span>
+      </div>
+
+      <!-- ============ OVERVIEW ============ -->
+      <section id="overview">
+        <div class="section-head">
+          <h2>Overview</h2>
+          <p>Current state of the monitored concrete element.</p>
+        </div>
+
+        <div class="grid-metrics">
+          <article class="card metric">
+            <div class="metric-top">
+              <span class="metric-label">Concrete Temperature</span>
+              <span class="chip chip--blue" data-icon="thermo" data-size="18"></span>
+            </div>
+            <div class="metric-row">
+              <div class="metric-value"><span id="valTemp">--</span><span class="unit">°C</span></div>
+              <div class="spark" id="sparkTemp"></div>
+            </div>
+            <div class="metric-foot">
+              <span class="metric-detail" id="tempDelta">Waiting for data</span>
+              <span class="metric-desc">Embedded sensor reading</span>
+            </div>
+          </article>
+
+          <article class="card metric">
+            <div class="metric-top">
+              <span class="metric-label">Cumulative Maturity</span>
+              <span class="chip chip--teal" data-icon="layers" data-size="18"></span>
+            </div>
+            <div class="metric-row">
+              <div class="metric-value"><span id="valMat">--</span><span class="unit">°C·h</span></div>
+              <div class="spark" id="sparkMat"></div>
+            </div>
+            <div class="metric-foot">
+              <span class="metric-detail" id="matEq">Equivalent age —</span>
+              <span class="metric-desc">Nurse-Saul temperature–time factor</span>
+            </div>
+          </article>
+
+          <article class="card metric">
+            <div class="metric-top">
+              <span class="metric-label">Estimated Compressive Strength</span>
+              <span class="chip chip--navy" data-icon="gauge" data-size="18"></span>
+            </div>
+            <div class="metric-row">
+              <div class="metric-value" id="strengthWrap"><span id="valStrength">--</span><span class="unit" id="strengthUnit">MPa</span></div>
+            </div>
+            <div class="metric-foot">
+              <span class="metric-detail" id="strengthDetail">—</span>
+              <span class="metric-desc">Estimated from maturity</span>
+            </div>
+          </article>
+
+          <article class="card metric">
+            <div class="metric-top">
+              <span class="metric-label">Sensor Status</span>
+              <span class="chip chip--gray" id="sensorChip" data-icon="radio" data-size="18"></span>
+            </div>
+            <div class="metric-row">
+              <div class="metric-value metric-value--status"><span id="valSensor">Offline</span></div>
+            </div>
+            <div class="metric-foot">
+              <span class="metric-detail" id="sensorDetail">No data acquired yet</span>
+              <span class="metric-desc">Data source connection</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="grid-charts">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3>Temperature history</h3>
+                <p>Concrete temperature (°C) against elapsed time</p>
+              </div>
+              <span class="badge badge--sim" id="badgeTemp">SIMULATED</span>
+            </div>
+            <div id="chartTemp"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3>Maturity trend</h3>
+                <p>Cumulative maturity (°C·h)</p>
+              </div>
+              <span class="badge badge--sim" id="badgeMat">SIMULATED</span>
+            </div>
+            <div id="chartMat"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ LIVE MONITORING ============ -->
+      <section id="live">
+        <div class="section-head">
+          <h2>Live Monitoring</h2>
+          <p>Control data acquisition and see how maturity is calculated, step by step.</p>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3 id="ctlTitle">Simulation control</h3>
+                <p id="ctlSub">Generates a realistic curing temperature curve.</p>
+              </div>
+            </div>
+
+            <div class="run-indicator" id="runIndicator">
+              <span class="run-dot" id="runDot"></span>
+              <span id="runText">Simulation stopped</span>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn--primary" type="button" id="btnStart"><span data-icon="play" data-size="16"></span><span id="startLabel">Start Simulation</span></button>
+              <button class="btn btn--danger" type="button" id="btnStop"><span data-icon="stop" data-size="16"></span><span id="stopLabel">Stop Simulation</span></button>
+            </div>
+
+            <div class="field-inline" id="speedField">
+              <span class="field-inline-label">Simulation speed</span>
+              <div class="seg" id="speedSeg" role="group" aria-label="Simulation speed">
+                <button type="button" data-speed="60">60×</button>
+                <button type="button" data-speed="600">600×</button>
+                <button type="button" data-speed="3600">3600×</button>
+              </div>
+            </div>
+            <p class="help" id="speedNote"></p>
+
+            <div class="mini-stats">
+              <div><span id="elapsedLabel">Simulated curing time</span><strong id="liveElapsed">0 min</strong></div>
+              <div><span>Samples</span><strong id="liveSamples">0</strong></div>
+              <div><span>Last reading</span><strong id="liveLast">—</strong></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head">
+              <div>
+                <h3>Maturity calculation</h3>
+                <p>Latest time step, using the Nurse-Saul method</p>
+              </div>
+            </div>
+            <div class="formula">M(t) = Σ ( Tₐ − T₀ ) · Δt</div>
+            <dl class="kv">
+              <div><dt>Average temperature Tₐ (step)</dt><dd id="kvTa">—</dd></div>
+              <div><dt>Datum temperature T₀</dt><dd id="kvT0">—</dd></div>
+              <div><dt>Effective Tₐ − T₀ (≥ 0)</dt><dd id="kvEff">—</dd></div>
+              <div><dt>Time step Δt</dt><dd id="kvDt">—</dd></div>
+              <div><dt>Increment this step</dt><dd id="kvInc">—</dd></div>
+              <div><dt>Cumulative maturity M</dt><dd id="kvM">—</dd></div>
+              <div><dt id="kvTeLabel">Equivalent age</dt><dd id="kvTe">—</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ HISTORY ============ -->
+      <section id="history">
+        <div class="section-head section-head--row">
+          <div>
+            <h2>Temperature History</h2>
+            <p>Summary statistics and the most recent readings.</p>
+          </div>
+          <button class="btn" type="button" id="btnExport"><span data-icon="download" data-size="16"></span>Export CSV</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><span>Minimum</span><strong id="stMin">—</strong></div>
+          <div class="stat"><span>Maximum</span><strong id="stMax">—</strong></div>
+          <div class="stat"><span>Average</span><strong id="stAvg">—</strong></div>
+          <div class="stat"><span>Samples</span><strong id="stN">0</strong></div>
+        </div>
+
+        <article class="card card--flush">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Elapsed</th>
+                  <th>Recorded at</th>
+                  <th class="num">Temperature</th>
+                  <th class="num">Maturity</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="histBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section id="settings">
+        <div class="section-head">
+          <h2>Settings</h2>
+          <p>Changes are saved in this browser and applied immediately.</p>
+        </div>
+        <p class="form-msg" id="setMsg" role="alert"></p>
+
+        <div class="grid-2">
+          <article class="card">
+            <div class="card-head"><div><h3>Calculation</h3><p>Nurse-Saul parameters</p></div></div>
+            <div class="field">
+              <label for="setDatum">Datum temperature T₀ (°C)</label>
+              <input id="setDatum" type="number" step="0.5" inputmode="decimal" autocomplete="off">
+              <span class="help">Below this temperature concrete is assumed to gain no strength. −10 °C is a common default when no mix-specific value is known.</span>
+            </div>
+            <div class="field">
+              <label for="setRef">Reference temperature (°C)</label>
+              <input id="setRef" type="number" step="0.5" inputmode="decimal" autocomplete="off">
+              <span class="help">Used for equivalent age: <code>te = M / (Tr − T₀)</code>.</span>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div><h3>Data source</h3><p>Where readings come from</p></div></div>
+            <div class="field">
+              <label for="setMode">Source</label>
+              <select id="setMode" autocomplete="off">
+                <option value="sim">Simulation (no hardware)</option>
+                <option value="esp">ESP32 over HTTP</option>
+              </select>
+              <span class="help">Switching source clears the current readings.</span>
+            </div>
+            <div class="field" id="fieldEndpoint">
+              <label for="setEndpoint">Device endpoint</label>
+              <input id="setEndpoint" type="text" spellcheck="false" autocomplete="off">
+              <span class="help">Must return JSON like <code>{"temperature_c": 24.5}</code>.</span>
+            </div>
+            <div class="field" id="fieldPoll">
+              <label for="setPoll">Poll interval (seconds)</label>
+              <input id="setPoll" type="number" min="1" max="60" step="1" inputmode="numeric" autocomplete="off">
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div><h3>Strength calibration</h3><p>Strength–maturity relationship</p></div></div>
+            <div class="field-row">
+              <div class="field">
+                <label for="setCalA">Coefficient a (MPa)</label>
+                <input id="setCalA" type="number" step="any" inputmode="decimal" autocomplete="off" placeholder="not set">
+              </div>
+              <div class="field">
+                <label for="setCalB">Coefficient b (MPa)</label>
+                <input id="setCalB" type="number" step="any" inputmode="decimal" autocomplete="off" placeholder="not set">
+              </div>
+            </div>
+            <p class="help help--block">Strength is estimated as <code>S = a + b · ln(M)</code> with M in °C·h. Obtain a and b from compressive tests of your own mix. Until both are set the dashboard shows “Calibration required”.</p>
+            <div class="btn-row">
+              <button class="btn" type="button" id="btnDemoCal">Use demo values</button>
+              <button class="btn" type="button" id="btnClearCal">Clear</button>
+            </div>
+            <p class="help help--block">Demo values are placeholders to preview the display. They are not validated for any concrete mix.</p>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div><h3>Data</h3><p>Manage collected readings</p></div></div>
+            <p class="help help--block help--top">Readings are kept in memory while this page is open. Export a CSV to keep a copy.</p>
+            <div class="btn-row">
+              <button class="btn" type="button" id="btnExport2"><span data-icon="download" data-size="16"></span>Export CSV</button>
+              <button class="btn btn--danger" type="button" id="btnReset"><span data-icon="reset" data-size="16"></span>Reset readings</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
