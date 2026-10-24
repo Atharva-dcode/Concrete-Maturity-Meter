@@ -1,5 +1,11 @@
 # Concrete Maturity Meter — dashboard
 
+<p align="center">
+  <img src="Concrete Maturity Meter System Architecture.png" alt="AWS Architecture" width="900">
+  <br>
+  <em>AWS EC2 + Docker + Amazon RDS Architecture</em>
+</p>
+
 A dependency-free monitoring dashboard (plain HTML, CSS and JavaScript). No build step, no `npm install`.
 
 ## Run on Windows
